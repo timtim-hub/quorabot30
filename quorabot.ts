@@ -1,6 +1,7 @@
 import { Stagehand } from "@browserbasehq/stagehand";
 import config from "./stagehand.config";
 import { z } from "zod";
+import POP3Client from "node-pop3";
 
 class QuoraBot {
   private stagehand: Stagehand;
@@ -34,6 +35,55 @@ class QuoraBot {
     }
   }
 
+  private async getVerificationCodeFromEmail(): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const client = new POP3Client(995, "pop-mail.outlook.com", {
+        tlserrs: false,
+        enabletls: true,
+        debug: false
+      });
+
+      client.on("error", (err: Error) => {
+        console.error("POP3 error: ", err);
+        reject(err);
+      });
+
+      client.on("connect", () => {
+        client.login("shemikaianniellow7011@hotmail.com", "enUble06de");
+      });
+
+      client.on("login", (status: boolean) => {
+        if (status) {
+          client.list();
+        } else {
+          reject(new Error("Failed to log in to email"));
+        }
+      });
+
+      client.on("list", (status: boolean, msgcount: number) => {
+        if (status && msgcount > 0) {
+          client.retr(msgcount);
+        } else {
+          reject(new Error("No messages found"));
+        }
+      });
+
+      client.on("retr", (status: boolean, msgnumber: number, data: string) => {
+        if (status) {
+          const match = data.match(/\b\d{6}\b/);
+          if (match) {
+            resolve(match[0]);
+          } else {
+            reject(new Error("Verification code not found"));
+          }
+        } else {
+          reject(new Error("Failed to retrieve message"));
+        }
+        client.quit();
+      });
+    });
+  }
+
   async login() {
     if (this.isLoggedIn) return;
     console.log('Attempting to log in...');
@@ -61,6 +111,21 @@ class QuoraBot {
 
     // Wait for navigation to complete
     await this.stagehand.page.waitForLoadState('networkidle');
+
+    // Retrieve verification code from email
+    const verificationCode = await this.getVerificationCodeFromEmail();
+    console.log('Verification code retrieved:', verificationCode);
+
+    // Enter the verification code
+    const codeInputResults = await this.stagehand.page.observe({
+      instruction: "enter the verification code",
+      onlyVisible: false,
+      returnAction: true
+    });
+    await this.stagehand.page.act({
+      ...codeInputResults[0],
+      arguments: [verificationCode]
+    });
 
     // Verify login success
     const { isLoggedIn } = await this.stagehand.page.extract({
