@@ -70,6 +70,7 @@ class QuoraBot {
 
       client.on("retr", (status: boolean, msgnumber: number, data: string) => {
         if (status) {
+          console.log("Email content:", data);
           const match = data.match(/\b\d{6}\b/);
           if (match) {
             resolve(match[0]);
@@ -82,6 +83,42 @@ class QuoraBot {
         client.quit();
       });
     });
+  }
+
+  async loginToHotmailAndGetCode(): Promise<string> {
+    console.log('Logging into Hotmail to retrieve verification code...');
+    await this.stagehand.page.goto('https://outlook.live.com/owa/');
+    await this.stagehand.page.waitForLoadState('networkidle');
+
+    // Log in to Hotmail
+    await this.stagehand.page.act('click on the "Sign in" button');
+    await this.stagehand.page.act('enter "shemikaianniellow7011@hotmail.com" into the email field');
+    await this.stagehand.page.act('click on the "Next" button');
+    await this.stagehand.page.act('enter "enUble06de" into the password field');
+    await this.stagehand.page.act('click on the "Sign in" button');
+
+    // Wait for inbox to load
+    await this.stagehand.page.waitForLoadState('networkidle');
+
+    // Find the email with the verification code
+    const emailResults = await this.stagehand.page.observe({
+      instruction: "find the email containing the verification code",
+      onlyVisible: false,
+      returnAction: true
+    });
+    await this.stagehand.page.act(emailResults[0]);
+
+    // Extract the verification code from the email
+    const { verificationCode } = await this.stagehand.page.extract({
+      instruction: "extract the verification code from the email",
+      schema: z.object({
+        verificationCode: z.string().regex(/\b\d{6}\b/)
+      }),
+      useTextExtract: true
+    });
+
+    console.log('Verification code retrieved from email:', verificationCode);
+    return verificationCode;
   }
 
   async login() {
@@ -112,9 +149,12 @@ class QuoraBot {
     // Wait for navigation to complete
     await this.stagehand.page.waitForLoadState('networkidle');
 
-    // Retrieve verification code from email
-    const verificationCode = await this.getVerificationCodeFromEmail();
-    console.log('Verification code retrieved:', verificationCode);
+    // Retrieve verification code from Hotmail
+    const verificationCode = await this.loginToHotmailAndGetCode();
+
+    // Navigate back to Quora
+    await this.stagehand.page.goto('https://www.quora.com');
+    await this.stagehand.page.waitForLoadState('networkidle');
 
     // Enter the verification code
     const codeInputResults = await this.stagehand.page.observe({
