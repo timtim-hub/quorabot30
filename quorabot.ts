@@ -41,8 +41,8 @@ class QuoraBot {
     // Accept cookies first
     await this.acceptCookies();
     
-    // Directly find and fill email field using selector
-    const emailInput = this.stagehand.page.locator("input[name='email']");
+    // Directly find and fill email field using selector, selecting the first matching element
+    const emailInput = this.stagehand.page.locator("input[name='email']").first();
     await emailInput.click();
     await emailInput.fill("shemikaianniellow7011@hotmail.com");
 
