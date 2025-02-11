@@ -51,13 +51,13 @@ class QuoraBot {
     // Accept cookies after filling in credentials
     await this.acceptCookies();
 
-    // Find and click submit button
-    const submitButtonResults = await this.stagehand.page.observe({
-      instruction: "find the login or submit button",
+    // Find and click the "Anmelden" button
+    const anmeldenButtonResults = await this.stagehand.page.observe({
+      instruction: "click the 'Anmelden' button",
       onlyVisible: false,
       returnAction: true
     });
-    await this.stagehand.page.act(submitButtonResults[0]);
+    await this.stagehand.page.act(anmeldenButtonResults[0]);
 
     // Wait for navigation to complete
     await this.stagehand.page.waitForLoadState('networkidle');
