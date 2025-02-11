@@ -41,27 +41,15 @@ class QuoraBot {
     // Accept cookies first
     await this.acceptCookies();
     
-    // Find and fill email field
-    const emailFieldResults = await this.stagehand.page.observe({
-      instruction: "Identify and click the email input field that has 'Deine E-Mail Adresse' as its placeholder, ensuring it belongs to the login form (and not a registration form). Then fill it with the provided email.",
-      onlyVisible: false,
-      returnAction: true
-    });
-    await this.stagehand.page.act({
-      ...emailFieldResults[0],
-      arguments: ["shemikaianniellow7011@hotmail.com"]
-    });
+    // Directly find and fill email field using selector
+    const emailInput = this.stagehand.page.locator("input[name='email']");
+    await emailInput.click();
+    await emailInput.fill("shemikaianniellow7011@hotmail.com");
 
-    // Find and fill password field
-    const passwordFieldResults = await this.stagehand.page.observe({
-      instruction: "Identify and click the password input field that has 'Dein Passwort' as its placeholder, ensuring it belongs to the login form. Then fill it with the provided password.",
-      onlyVisible: false,
-      returnAction: true
-    });
-    await this.stagehand.page.act({
-      ...passwordFieldResults[0],
-      arguments: ["cJ45g5Z3bKSt"]
-    });
+    // Directly find and fill password field using selector
+    const passwordInput = this.stagehand.page.locator("input[name='password']");
+    await passwordInput.click();
+    await passwordInput.fill("cJ45g5Z3bKSt");
 
     // Find and click submit button
     const submitButtonResults = await this.stagehand.page.observe({
