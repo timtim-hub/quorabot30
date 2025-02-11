@@ -38,9 +38,6 @@ class QuoraBot {
     if (this.isLoggedIn) return;
     console.log('Attempting to log in...');
     
-    // Accept cookies first
-    await this.acceptCookies();
-    
     // Directly find and fill email field using selector, selecting the first matching element
     const emailInput = this.stagehand.page.locator("input[name='email']").first();
     await emailInput.click();
@@ -50,6 +47,9 @@ class QuoraBot {
     const passwordInput = this.stagehand.page.locator("input[name='password']");
     await passwordInput.click();
     await passwordInput.fill("cJ45g5Z3bKSt");
+
+    // Accept cookies after filling in credentials
+    await this.acceptCookies();
 
     // Find and click submit button
     const submitButtonResults = await this.stagehand.page.observe({
