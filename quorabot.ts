@@ -128,12 +128,12 @@ class QuoraBot {
     // Directly find and fill email field using selector, selecting the first matching element
     const emailInput = this.stagehand.page.locator("input[name='email']").first();
     await emailInput.click();
-    await emailInput.fill("shemikaianniellow7011@hotmail.com");
+    await emailInput.fill("phaeton-okarina0c@icloud.com");
 
     // Directly find and fill password field using selector
     const passwordInput = this.stagehand.page.locator("input[name='password']");
     await passwordInput.click();
-    await passwordInput.fill("cJ45g5Z3bKSt");
+    await passwordInput.fill("jerki8-pomwuc-Kahhem");
 
     // Accept cookies after filling in credentials
     await this.acceptCookies();
@@ -149,23 +149,31 @@ class QuoraBot {
     // Wait for navigation to complete
     await this.stagehand.page.waitForLoadState('networkidle');
 
-    // Retrieve verification code from Hotmail
-    const verificationCode = await this.loginToHotmailAndGetCode();
-
-    // Navigate back to Quora
-    await this.stagehand.page.goto('https://www.quora.com');
-    await this.stagehand.page.waitForLoadState('networkidle');
-
-    // Enter the verification code
-    const codeInputResults = await this.stagehand.page.observe({
-      instruction: "enter the verification code",
-      onlyVisible: false,
-      returnAction: true
+    // Ask the user if a verification code is needed
+    console.log('Is a verification code required? (y/n):');
+    const isCodeRequired = await new Promise<string>((resolve) => {
+      process.stdin.once('data', (data) => resolve(data.toString().trim().toLowerCase()));
     });
-    await this.stagehand.page.act({
-      ...codeInputResults[0],
-      arguments: [verificationCode]
-    });
+
+    if (isCodeRequired === 'y') {
+      console.log('Please enter the verification code:');
+      const verificationCode = await new Promise<string>((resolve) => {
+        process.stdin.once('data', (data) => resolve(data.toString().trim()));
+      });
+
+      // Enter the verification code
+      const codeInputResults = await this.stagehand.page.observe({
+        instruction: "enter the verification code",
+        onlyVisible: false,
+        returnAction: true
+      });
+      await this.stagehand.page.act({
+        ...codeInputResults[0],
+        arguments: [verificationCode]
+      });
+    } else {
+      console.log('Proceeding without verification code.');
+    }
 
     // Verify login success
     const { isLoggedIn } = await this.stagehand.page.extract({
@@ -187,18 +195,17 @@ class QuoraBot {
   async findAndAnswerQuestions(maxQuestions: number = 5) {
     console.log('Looking for questions to answer...');
 
-    // Go to Answer page
-    await this.stagehand.page.goto('https://www.quora.com/answer');
+    // Navigate to the specific Quora search page
+    await this.stagehand.page.goto('https://www.quora.com/search?q=buy%20followers&type=answer');
     await this.stagehand.page.waitForLoadState('networkidle');
 
-    // Extract questions
+    // Extract questions from the search results
     const { questions } = await this.stagehand.page.extract({
-      instruction: "extract all unanswered questions with their links",
+      instruction: "extract all questions from the search results with their links",
       schema: z.object({
         questions: z.array(z.object({
           title: z.string(),
-          link: z.string(),
-          topics: z.array(z.string()).optional()
+          link: z.string()
         }))
       }),
       useTextExtract: true
@@ -234,10 +241,10 @@ class QuoraBot {
 
       // Generate a unique answer based on context and existing answers
       const answer = this.generateAnswer(question.title, context, existingAnswers);
-      
-      // Find and fill answer field
+
+      // Use Stagehand to find and fill the answer field
       const answerFieldResults = await this.stagehand.page.observe({
-        instruction: "find the answer text editor or input field",
+        instruction: "find the 'write your answer' field",
         onlyVisible: false,
         returnAction: true
       });
